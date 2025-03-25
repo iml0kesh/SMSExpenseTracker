@@ -1,16 +1,24 @@
 package com.example.smsexpensetracker;
 
+import androidx.annotation.NonNull;
+
+import java.util.Date;
+
 public class SmsComponent {
-    private String SMSBody;
     private String SMSSender;
+    private String SMSBody;
     private Date SMSDate;
     private Double SMSAmount;
+    private String amountType;
+    private Double totalDebitAmount;
+    private Double totalCreditAmount;
 
-    public SmsComponent(String SMSBody, String SMSSender, Date SMSDate, Double SMSAmount) {
-        this.SMSBody = SMSBody;
+    public SmsComponent(String SMSSender, String SMSBody, Date SMSDate, Double SMSAmount, String amountType) {
         this.SMSSender = SMSSender;
+        this.SMSBody = SMSBody;
         this.SMSDate = SMSDate;
         this.SMSAmount = SMSAmount;
+        this.amountType = amountType;
     }
 
     public String getSMSBody() {
@@ -41,7 +49,42 @@ public class SmsComponent {
         return SMSAmount;
     }
 
+    public String getAmountType() {
+        return amountType;
+    }
+
+    public void setAmountType(String amountType) {
+        this.amountType = amountType;
+    }
+
+    public Double getTotalDebitAmount() {
+        return totalDebitAmount;
+    }
+
+    public void setTotalDebitAmount(Double totalDebitAmount) {
+        this.totalDebitAmount = totalDebitAmount;
+    }
+
+    public Double getTotalCreditAmount() {
+        return totalCreditAmount;
+    }
+
+    public void setTotalCreditAmount(Double totalCreditAmount) {
+        this.totalCreditAmount = totalCreditAmount;
+    }
+
     public void setSMSAmount(Double SMSAmount) {
         this.SMSAmount = SMSAmount;
+    }
+
+    @NonNull
+    @Override
+    public String toString() {
+        return "SmsComponent:\n" +
+                "Sender = " + SMSSender + '\n' +
+                "Body = " + SMSBody + '\n' +
+                "SMSDate = " + SMSDate + '\n' +
+                "SMSAmount = " + SMSAmount + '\n' +
+                "Type = " + amountType;
     }
 }
