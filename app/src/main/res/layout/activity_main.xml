@@ -1,17 +1,87 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical">
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <ListView
-        android:id="@+id/listViewOfSMS"
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
 
-    <ListView
-        android:id="@+id/listViewOfAmount"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+        <!-- Summary Section -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Summary"
+            android:textSize="20sp"
+            android:textStyle="bold" />
 
-</LinearLayout>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginTop="8dp">
+
+            <TextView
+                android:id="@+id/textSpentToday"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Spent Today: " />
+
+            <TextView
+                android:id="@+id/textSpentYesterday"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Spent Yesterday: " />
+
+            <TextView
+                android:id="@+id/textSpentThisMonth"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Spent This Month: " />
+
+            <TextView
+                android:id="@+id/textTotalIncome"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Total Income: " />
+
+            <TextView
+                android:id="@+id/textNetIncomeExpense"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Net Income/Expense: " />
+        </LinearLayout>
+
+        <!-- Income vs. Expense Chart (Placeholder) -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Income vs. Expenses (Chart Placeholder)"
+            android:textSize="16sp"
+            android:layout_marginTop="16dp"/>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="200dp"
+            android:background="#CCCCCC"
+            android:layout_marginTop="8dp"/>
+
+        <!-- Top Payees Section -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Top Payees"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:layout_marginTop="16dp"/>
+        <!-- Top Payees List (Placeholder) -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recyclerTopPayees"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"/>
+    </LinearLayout>
+</ScrollView>
