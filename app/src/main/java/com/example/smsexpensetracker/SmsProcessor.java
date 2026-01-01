@@ -7,10 +7,33 @@ import java.util.regex.Pattern;
 
 public class SmsProcessor {
     private double totalDebitAmount = 0.0;
+
+    public double getTotalDebitAmount() {
+        return totalDebitAmount;
+    }
+
+    public void setTotalDebitAmount(double totalDebitAmount) {
+        this.totalDebitAmount = totalDebitAmount;
+    }
+
+    public double getTotalCreditAmount() {
+        return totalCreditAmount;
+    }
+
+    public void setTotalCreditAmount(double totalCreditAmount) {
+        this.totalCreditAmount = totalCreditAmount;
+    }
+
     private double totalCreditAmount = 0.0;
     private List<Double> allAmount = new ArrayList<>();
 
     private String amountType;
+
+    public void resetTotals() {
+        setTotalCreditAmount(0.0);
+        setTotalDebitAmount(0.0);
+    }
+
     public enum TransactionType {
         DEBIT, CREDIT, UNKNOWN
     }
@@ -25,50 +48,29 @@ public class SmsProcessor {
         }
     }
     public ProcessResult processSms(String smsBody) {
-        ProcessResult amount = extractAndProcessAmount(smsBody, "ICICI Bank Acct XX314 debited for Rs ([\\d,.]+)", TransactionType.DEBIT);
-        if( amount.type != TransactionType.UNKNOWN) return amount;
 
-        return extractAndProcessAmount(smsBody, "Dear Customer, Acct XX123 is credited with Rs ([\\d,.]+)", TransactionType.CREDIT);
-    }
+            Pattern amountPattern =
+                    Pattern.compile("(Rs\\.?|INR)\\s*([\\d,]+\\.?\\d*)");
 
-    private ProcessResult extractAndProcessAmount(String smsBody, String regex, TransactionType type) {
-        Pattern pattern = Pattern.compile(regex);
-        Matcher matcher = pattern.matcher(smsBody);
+            Matcher matcher = amountPattern.matcher(smsBody);
 
-        String amountString = matcher.find() ? matcher.group(1) : null;
-
-        if(amountString != null) {
-            try {
-                double parsedAmount = Double.parseDouble(amountString.replace(",", ""));
-                allAmount.add(parsedAmount);
-
-                if(type == TransactionType.DEBIT) {
-                    totalDebitAmount += parsedAmount;
-                    return new ProcessResult(parsedAmount, TransactionType.DEBIT);
-                } else if(type == TransactionType.CREDIT) {
-                    totalCreditAmount += parsedAmount;
-                    return new ProcessResult(parsedAmount, TransactionType.CREDIT);
-                }
-            } catch (NumberFormatException e) {
-                System.out.println("Error converting amount to number");
+            if (!matcher.find()) {
+                return new ProcessResult(0.0, TransactionType.UNKNOWN);
             }
+
+            double amount = Double.parseDouble(matcher.group(2).replace(",", ""));
+
+            if (smsBody.toLowerCase().contains("debit")) {
+                totalDebitAmount += amount;
+                return new ProcessResult(amount, TransactionType.DEBIT);
+            }
+
+            if (smsBody.toLowerCase().contains("credit")) {
+                totalCreditAmount += amount;
+                return new ProcessResult(amount, TransactionType.CREDIT);
+            }
+
+            return new ProcessResult(amount, TransactionType.UNKNOWN);
         }
-        return new ProcessResult(0.0, TransactionType.UNKNOWN);
-    }
 
-    public double getTotalDebitAmount() {
-        return totalDebitAmount;
     }
-
-    public double getTotalCreditAmount() {
-        return totalCreditAmount;
-    }
-
-    public List<Double> getAllAmount() {
-        return allAmount;
-    }
-
-    public String getAmountType() {
-        return amountType;
-    }
-}

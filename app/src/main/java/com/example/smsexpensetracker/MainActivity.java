@@ -1,12 +1,15 @@
 package com.example.smsexpensetracker;
 
+import android.annotation.SuppressLint;
 import android.content.ContentResolver;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Telephony;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -19,6 +22,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class MainActivity extends AppCompatActivity {
+
+    TextView tvTotalDebit, tvTotalCredit, tvBalance;
+
     private ArrayList<String> smsList = new ArrayList<>();
 
     private ArrayList<SmsComponent> smsComponents = new ArrayList<>();
@@ -39,183 +45,169 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // This will displat all the SMS
-    //        listViewOfSMS = findViewById(R.id.listViewOfSMS);
-    //        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, smsList);
-    //        listViewOfSMS.setAdapter(adapter);
-
-//        listViewOfAmount = findViewById(R.id.listViewOfAmount);
-//        ArrayAdapter<Double> adapterAmount = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, allAmount);
-//        listViewOfAmount.setAdapter(adapterAmount);
-
-//        listViewOfAmount = findViewById(R.id.listViewOfAmount);
-//        ArrayAdapter<Date> adapterDate = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, AmountDate);
-//        listViewOfAmount.setAdapter(adapterDate);
+        // 🔹 Initialize views FIRST
+        tvTotalDebit = findViewById(R.id.tvTotalDebit);
+        tvTotalCredit = findViewById(R.id.tvTotalCredit);
+        tvBalance = findViewById(R.id.tvBalance);
 
         listViewOfSMS = findViewById(R.id.listViewOfSMS);
-        ArrayAdapter<SmsComponent> adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, smsComponents);
+
+        ArrayAdapter<SmsComponent> adapter =
+                new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, smsComponents);
         listViewOfSMS.setAdapter(adapter);
 
+        // Permission check
         if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.READ_SMS)
                 != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this,
-                    new String[]{android.Manifest.permission.READ_SMS}, READ_SMS_PERMISSION_CODE);
+            ActivityCompat.requestPermissions(
+                    this,
+                    new String[]{android.Manifest.permission.READ_SMS},
+                    READ_SMS_PERMISSION_CODE
+            );
         } else {
-            String[] possibleSenders = new String[]{"AD-ICICIT", "JD-ICICIT", "JM-ICICIT", "JX-ICICIT"};
-            readSms(possibleSenders);
-            // readSms(); // This will read all the messages.
+            readSms(new String[]{"AD-ICICIT", "JD-ICICIT", "JM-ICICIT", "JX-ICICIT"});
+            updateTotals();
         }
     }
+
+    private void updateTotals() {
+        double totalDebit = processor.getTotalDebitAmount();
+        double totalCredit = processor.getTotalCreditAmount();
+        double balance = totalCredit - totalDebit;
+
+        tvTotalDebit.setText("Total Spent: ₹" + totalDebit);
+        tvTotalCredit.setText("Total Received: ₹" + totalCredit);
+        tvBalance.setText("Balance: ₹" + balance);
+    }
+
 
 
     // This function will get the messages only from a specific number.
+    @SuppressLint("SetTextI18n")
+//    private void readSms(String[] possibleSenders) {
+//
+//        smsComponents.clear();
+//        processor.resetTotals();
+//
+//        ContentResolver contentResolver = getContentResolver();
+//
+//        double totalDebit = processor.getTotalDebitAmount();
+//        double totalCredit = processor.getTotalCreditAmount();
+//        double balance = totalCredit - totalDebit;
+//
+//        StringBuilder selectionBuilder = new StringBuilder();
+//        String[] selectionArgs = new String[possibleSenders.length];
+//
+//        selectionBuilder.append(Telephony.Sms.ADDRESS + " IN (");
+//        for(int i=0; i<possibleSenders.length; i++){
+//            selectionBuilder.append("?");
+//            selectionArgs[i] = possibleSenders[i];
+//            if(i < possibleSenders.length - 1) {
+//                selectionBuilder.append(", ");
+//            }
+//        }
+//
+//        selectionBuilder.append(")");
+//
+//        String selection = selectionBuilder.toString();
+//
+//        Cursor cursor = contentResolver.query(
+//                Telephony.Sms.CONTENT_URI,
+//                null,
+//                selection,
+//                selectionArgs,
+//                null);
+//
+//        if (cursor != null && cursor.moveToFirst()) {
+//            do {
+//                // This will get the sender.
+//                String address = cursor.getString(cursor.getColumnIndexOrThrow(Telephony.Sms.ADDRESS));
+//
+//                // This will get what the sender has sent.
+//                String body = cursor.getString(cursor.getColumnIndexOrThrow(Telephony.Sms.BODY));
+//
+//                Date smsDate = new Date(cursor.getLong(cursor.getColumnIndexOrThrow(Telephony.Sms.DATE)));
+////                AmountDate.add(smsDate);
+//
+//                SmsProcessor.ProcessResult result = processor.processSms(body);
+//                String Type = result.type == SmsProcessor.TransactionType.DEBIT ? "DEBIT" : "CREDIT";
+//
+//                SmsComponent smsComponent = new SmsComponent(address, body, smsDate, result.amount, Type);
+//                smsComponents.add(smsComponent);
+//
+////                smsList.add("Sender: " + address + "\nMessage: " + body + "\nAmount: " + processSms(body));
+//
+//            } while (cursor.moveToNext());
+//        }
+//
+//        tvTotalDebit.setText("Total Spent: ₹" + totalDebit);
+//        tvTotalCredit.setText("Total Received: ₹" + totalCredit);
+//        tvBalance.setText("Balance: ₹" + balance);
+//
+//        if (cursor != null) {
+//            cursor.close();
+//        }
+//        updateTotals();
+//    }
+
     private void readSms(String[] possibleSenders) {
         ContentResolver contentResolver = getContentResolver();
 
-//        String selection = Telephony.Sms.ADDRESS + " = ?"; // Selection criteria
-//        String[] selectionArgs = {phoneNumber};
+        // 1. Clear existing data to avoid duplicates
+        smsComponents.clear();
 
-        StringBuilder selectionBuilder = new StringBuilder();
-        String[] selectionArgs = new String[possibleSenders.length];
+        String selection = Telephony.Sms.ADDRESS + " LIKE ?"; // <--- Defined here
+        String[] selectionArgs = new String[]{"%ICICI%"};
+        String sortOrder = Telephony.Sms.DATE + " DESC"; // <--- Get newest first
 
-        selectionBuilder.append(Telephony.Sms.ADDRESS + " IN (");
-        for(int i=0; i<possibleSenders.length; i++){
-         selectionBuilder.append("?");
-         selectionArgs[i] = possibleSenders[i];
-         if(i < possibleSenders.length - 1) {
-             selectionBuilder.append(", ");
-         }
-        }
-
-        selectionBuilder.append(")");
-
-        String selection = selectionBuilder.toString();
-
+        // 3. Query the provider
         Cursor cursor = contentResolver.query(
                 Telephony.Sms.CONTENT_URI,
                 null,
-                selection,
-                selectionArgs,
-                null);
+                selection,      // Pass the variable
+                selectionArgs,  // Pass the variable
+                sortOrder       // Added sort order here
+        );
 
         if (cursor != null && cursor.moveToFirst()) {
             do {
-                // This will get the sender.
                 String address = cursor.getString(cursor.getColumnIndexOrThrow(Telephony.Sms.ADDRESS));
-
-                // This will get what the sender has sent.
                 String body = cursor.getString(cursor.getColumnIndexOrThrow(Telephony.Sms.BODY));
-
-                Date smsDate = new Date(cursor.getLong(cursor.getColumnIndexOrThrow(Telephony.Sms.DATE)));
-//                AmountDate.add(smsDate);
+                long dateLong = cursor.getLong(cursor.getColumnIndexOrThrow(Telephony.Sms.DATE));
+                Date smsDate = new Date(dateLong);
 
                 SmsProcessor.ProcessResult result = processor.processSms(body);
-                String Type = result.type == SmsProcessor.TransactionType.DEBIT ? "DEBIT" : "CREDIT";
+                String type = (result.type == SmsProcessor.TransactionType.DEBIT) ? "DEBIT" : "CREDIT";
 
-                SmsComponent smsComponent = new SmsComponent(address, body, smsDate, result.amount, Type);
+                SmsComponent smsComponent = new SmsComponent(address, body, smsDate, result.amount, type);
                 smsComponents.add(smsComponent);
 
-//                smsList.add("Sender: " + address + "\nMessage: " + body + "\nAmount: " + processSms(body));
-
             } while (cursor.moveToNext());
-        }
-
-//        smsList.add("Total debit amount: " + totalDebitAmount);
-//        smsList.add("Total Credit Amount: " + totalCreditAmount);
-        if (cursor != null) {
             cursor.close();
         }
-    }
 
-    // This  function will get all the messages.
-    private void readSms() {
-        ContentResolver contentResolver = getContentResolver();
-        Cursor cursor = contentResolver.query(
-                Telephony.Sms.CONTENT_URI,
-                null,
-                null,
-                null,
-                null);
-
-        if (cursor != null && cursor.moveToFirst()) {
-            do {
-                String address = cursor.getString(cursor.getColumnIndexOrThrow(Telephony.Sms.ADDRESS));
-                String body = cursor.getString(cursor.getColumnIndexOrThrow(Telephony.Sms.BODY));
-                smsList.add("Sender: " + address + "\nMessage: " + body);
-//                amountList.add(processSms(body));
-            } while (cursor.moveToNext());
-        }
-
-        if (cursor != null) {
-            cursor.close();
+        // 4. Update UI
+        updateTotals();
+        if (listViewOfSMS.getAdapter() != null) {
+            ((ArrayAdapter<?>) listViewOfSMS.getAdapter()).notifyDataSetChanged();
         }
     }
-
-
-//    public double processSms(String smsBody) {
-//
-//        String regexDebit = "ICICI Bank Acct XX314 debited for Rs ([\\d,.]+) on ";
-//
-//        Pattern pattern = Pattern.compile(regexDebit);
-//        Matcher matcher = pattern.matcher(smsBody);
-//
-//        String amount = matcher.find() ? matcher.group(1) : null;
-//
-//        if (amount != null) {
-//            String numericAmountString = amount.replace(",", "");
-//            try {
-//                double parsedAmount = Double.parseDouble(numericAmountString);
-//                totalDebitAmount += parsedAmount;
-//                allAmount.add(parsedAmount);
-//                return parsedAmount;
-//
-//            } catch (NumberFormatException e) {
-//                System.out.println("Error converting amount to number.");
-//            }
-//
-//        } else {
-//            System.out.println("Amount not found in SMS.");
-//        }
-//
-//        String regexCredit = "Dear Customer, Acct XX314 is credited with Rs ([\\d,.]+) on ";
-//        Pattern patternCredit = Pattern.compile(regexCredit);
-//        Matcher matcherCredit = patternCredit.matcher(smsBody);
-//
-//        String amountCredit = matcherCredit.find() ? matcherCredit.group(1) : null;
-//
-//        if (amountCredit != null) {
-//            System.out.println("Extracted amount: " + amountCredit);
-//            String numericAmountString = amountCredit.replace(",", "");
-//            try {
-//                double parsedCreditAmount = Double.parseDouble(numericAmountString);
-//                totalCreditAmount += parsedCreditAmount;
-//                return parsedCreditAmount;
-//            } catch (NumberFormatException e) {
-//                System.out.println("Error converting amount to number.");
-//            }
-//        } else {
-//            System.out.println("Amount not found in SMS.");
-//        }
-//
-//        return 0.0;
-//    }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+    public void onRequestPermissionsResult(int requestCode,
+                                           @NonNull String[] permissions,
                                            @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == READ_SMS_PERMISSION_CODE) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-//                readSms("AD-ICICIT");
-//                readSms();
-                ArrayAdapter<String> adapter = (ArrayAdapter<String>) listViewOfSMS.getAdapter();
-                adapter.notifyDataSetChanged();
 
-                ArrayAdapter<Double> adapterAmount = (ArrayAdapter<Double>) listViewOfAmount.getAdapter();
-                adapterAmount.notifyDataSetChanged();
-            } else {
-                System.out.println("Permission denied.");
-            }
+        if (requestCode == READ_SMS_PERMISSION_CODE &&
+                grantResults.length > 0 &&
+                grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
+            readSms(new String[]{"AD-ICICIT", "JD-ICICIT", "JM-ICICIT", "JX-ICICIT", "AD-ICICIT-S", "AX-ICICIT-S", ""});
+            updateTotals();
+
+            ((ArrayAdapter<?>) listViewOfSMS.getAdapter()).notifyDataSetChanged();
         }
     }
+
 }
