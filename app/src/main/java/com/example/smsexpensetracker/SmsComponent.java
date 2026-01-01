@@ -87,4 +87,5 @@ public class SmsComponent {
                 "SMSAmount = " + SMSAmount + '\n' +
                 "Type = " + amountType;
     }
+
 }

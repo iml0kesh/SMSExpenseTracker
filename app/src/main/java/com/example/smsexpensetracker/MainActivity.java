@@ -4,7 +4,6 @@ import android.annotation.SuppressLint;
 import android.content.ContentResolver;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
-import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Telephony;
 import android.widget.ArrayAdapter;
@@ -16,157 +15,102 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class MainActivity extends AppCompatActivity {
 
+    // 1. Declare variables at the top (don't use findViewById here!)
     TextView tvTotalDebit, tvTotalCredit, tvBalance;
-
-    private ArrayList<String> smsList = new ArrayList<>();
-
-    private ArrayList<SmsComponent> smsComponents = new ArrayList<>();
-    private ArrayList<Double> allAmount = new ArrayList<>();
-
-    private ArrayList<Date> AmountDate = new ArrayList<>();
+    TextView tvToday, tvWeek, tvMonth, tvYear; // New grouping views
+    private final ArrayList<SmsComponent> smsComponents = new ArrayList<>();
     private ListView listViewOfSMS;
-    private ListView listViewOfAmount;
     private static final int READ_SMS_PERMISSION_CODE = 1;
 
-    private static double totalDebitAmount = 0.0;
-    private  static double totalCreditAmount = 0.0;
-
     SmsProcessor processor = new SmsProcessor();
+    FloatingActionButton btnScrollBottom; // Just declare it
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // 🔹 Initialize views FIRST
-        tvTotalDebit = findViewById(R.id.tvTotalDebit);
-        tvTotalCredit = findViewById(R.id.tvTotalCredit);
-        tvBalance = findViewById(R.id.tvBalance);
+        // 2. Initialize views AFTER setContentView
+//        tvTotalDebit = findViewById(R.id.tvTotalDebit);
+//        tvTotalCredit = findViewById(R.id.tvTotalCredit);
+        // tvBalance = findViewById(R.id.tvBalance);
+
+        // Make sure these IDs exist in your XML
+        tvToday = findViewById(R.id.tvToday);
+        tvWeek = findViewById(R.id.tvWeek);
+        tvMonth = findViewById(R.id.tvMonth);
+        tvYear = findViewById(R.id.tvYear);
 
         listViewOfSMS = findViewById(R.id.listViewOfSMS);
+//        btnScrollBottom = findViewById(R.id.btnScrollBottom);
 
-        ArrayAdapter<SmsComponent> adapter =
-                new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, smsComponents);
+        SmsAdapter adapter = new SmsAdapter(this, smsComponents);
         listViewOfSMS.setAdapter(adapter);
+
 
         // Permission check
         if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.READ_SMS)
                 != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(
-                    this,
-                    new String[]{android.Manifest.permission.READ_SMS},
-                    READ_SMS_PERMISSION_CODE
-            );
+            ActivityCompat.requestPermissions(this,
+                    new String[]{android.Manifest.permission.READ_SMS}, READ_SMS_PERMISSION_CODE);
         } else {
-            readSms(new String[]{"AD-ICICIT", "JD-ICICIT", "JM-ICICIT", "JX-ICICIT"});
-            updateTotals();
+            // Now it's safe to call readSms because tvToday etc. are not null anymore
+            readSms();
         }
+
+        // 3. Set the listener inside onCreate
+//        btnScrollBottom.setOnClickListener(v -> {
+//            if (listViewOfSMS.getAdapter() != null) {
+//                int lastItem = listViewOfSMS.getAdapter().getCount() - 1;
+//                if (lastItem >= 0) {
+//                    listViewOfSMS.smoothScrollToPosition(lastItem);
+//                }
+//            }
+//        });
     }
 
+    @SuppressLint("DefaultLocale")
     private void updateTotals() {
+        // Grand Totals
         double totalDebit = processor.getTotalDebitAmount();
         double totalCredit = processor.getTotalCreditAmount();
-        double balance = totalCredit - totalDebit;
+        // double balance = totalCredit - totalDebit;
 
-        tvTotalDebit.setText("Total Spent: ₹" + totalDebit);
-        tvTotalCredit.setText("Total Received: ₹" + totalCredit);
-        tvBalance.setText("Balance: ₹" + balance);
+//        tvTotalDebit.setText(String.format("%.2f", totalDebit));
+//        tvTotalCredit.setText(String.format("%.2f", totalCredit));
+        // tvBalance.setText("Balance: ₹" + balance);
+
+        // Calculate Grouped Totals (Today, Week, Month)
+        calculateGroupedTotals();
     }
 
-
-
-    // This function will get the messages only from a specific number.
-    @SuppressLint("SetTextI18n")
-//    private void readSms(String[] possibleSenders) {
-//
-//        smsComponents.clear();
-//        processor.resetTotals();
-//
-//        ContentResolver contentResolver = getContentResolver();
-//
-//        double totalDebit = processor.getTotalDebitAmount();
-//        double totalCredit = processor.getTotalCreditAmount();
-//        double balance = totalCredit - totalDebit;
-//
-//        StringBuilder selectionBuilder = new StringBuilder();
-//        String[] selectionArgs = new String[possibleSenders.length];
-//
-//        selectionBuilder.append(Telephony.Sms.ADDRESS + " IN (");
-//        for(int i=0; i<possibleSenders.length; i++){
-//            selectionBuilder.append("?");
-//            selectionArgs[i] = possibleSenders[i];
-//            if(i < possibleSenders.length - 1) {
-//                selectionBuilder.append(", ");
-//            }
-//        }
-//
-//        selectionBuilder.append(")");
-//
-//        String selection = selectionBuilder.toString();
-//
-//        Cursor cursor = contentResolver.query(
-//                Telephony.Sms.CONTENT_URI,
-//                null,
-//                selection,
-//                selectionArgs,
-//                null);
-//
-//        if (cursor != null && cursor.moveToFirst()) {
-//            do {
-//                // This will get the sender.
-//                String address = cursor.getString(cursor.getColumnIndexOrThrow(Telephony.Sms.ADDRESS));
-//
-//                // This will get what the sender has sent.
-//                String body = cursor.getString(cursor.getColumnIndexOrThrow(Telephony.Sms.BODY));
-//
-//                Date smsDate = new Date(cursor.getLong(cursor.getColumnIndexOrThrow(Telephony.Sms.DATE)));
-////                AmountDate.add(smsDate);
-//
-//                SmsProcessor.ProcessResult result = processor.processSms(body);
-//                String Type = result.type == SmsProcessor.TransactionType.DEBIT ? "DEBIT" : "CREDIT";
-//
-//                SmsComponent smsComponent = new SmsComponent(address, body, smsDate, result.amount, Type);
-//                smsComponents.add(smsComponent);
-//
-////                smsList.add("Sender: " + address + "\nMessage: " + body + "\nAmount: " + processSms(body));
-//
-//            } while (cursor.moveToNext());
-//        }
-//
-//        tvTotalDebit.setText("Total Spent: ₹" + totalDebit);
-//        tvTotalCredit.setText("Total Received: ₹" + totalCredit);
-//        tvBalance.setText("Balance: ₹" + balance);
-//
-//        if (cursor != null) {
-//            cursor.close();
-//        }
-//        updateTotals();
-//    }
-
-    private void readSms(String[] possibleSenders) {
+    private void readSms() {
         ContentResolver contentResolver = getContentResolver();
-
-        // 1. Clear existing data to avoid duplicates
         smsComponents.clear();
+        processor.resetTotals(); // Assuming your processor has a way to reset
 
-        String selection = Telephony.Sms.ADDRESS + " LIKE ?"; // <--- Defined here
-        String[] selectionArgs = new String[]{"%ICICI%"};
-        String sortOrder = Telephony.Sms.DATE + " DESC"; // <--- Get newest first
+        // Use OR to look for either ICICI or HDFC in the sender address
+        String selection = Telephony.Sms.ADDRESS + " LIKE ? OR " + Telephony.Sms.ADDRESS + " LIKE ?";
 
-        // 3. Query the provider
+        // The % wildcards ensure it matches names like AD-ICICIT or HDFCBK
+        String[] selectionArgs = new String[]{"%ICICI%", "%HDFC%"};
+        String sortOrder = Telephony.Sms.DATE + " DESC";
+
         Cursor cursor = contentResolver.query(
                 Telephony.Sms.CONTENT_URI,
                 null,
-                selection,      // Pass the variable
-                selectionArgs,  // Pass the variable
-                sortOrder       // Added sort order here
+                selection,
+                selectionArgs,
+                sortOrder
         );
 
         if (cursor != null && cursor.moveToFirst()) {
@@ -186,28 +130,51 @@ public class MainActivity extends AppCompatActivity {
             cursor.close();
         }
 
-        // 4. Update UI
         updateTotals();
         if (listViewOfSMS.getAdapter() != null) {
             ((ArrayAdapter<?>) listViewOfSMS.getAdapter()).notifyDataSetChanged();
         }
     }
 
-    @Override
-    public void onRequestPermissionsResult(int requestCode,
-                                           @NonNull String[] permissions,
-                                           @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+    @SuppressLint({"SetTextI18n", "DefaultLocale"})
+    private void calculateGroupedTotals() {
+        double spentToday = 0, spentWeek = 0, spentMonth = 0, spentYear = 0;
+        Calendar now = Calendar.getInstance();
 
-        if (requestCode == READ_SMS_PERMISSION_CODE &&
-                grantResults.length > 0 &&
-                grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+        for (SmsComponent sms : smsComponents) {
+            if (sms.getAmountType().equalsIgnoreCase("DEBIT")) {
+                Calendar smsCal = Calendar.getInstance();
+                smsCal.setTime(sms.getSMSDate());
 
-            readSms(new String[]{"AD-ICICIT", "JD-ICICIT", "JM-ICICIT", "JX-ICICIT", "AD-ICICIT-S", "AX-ICICIT-S", ""});
-            updateTotals();
+                if (smsCal.get(Calendar.YEAR) == now.get(Calendar.YEAR)) {
+                    spentYear += sms.getSMSAmount(); // Total for current year
 
-            ((ArrayAdapter<?>) listViewOfSMS.getAdapter()).notifyDataSetChanged();
+                    if (smsCal.get(Calendar.MONTH) == now.get(Calendar.MONTH)) {
+                        spentMonth += sms.getSMSAmount(); // Total for current month
+
+                        if (smsCal.get(Calendar.WEEK_OF_YEAR) == now.get(Calendar.WEEK_OF_YEAR)) {
+                            spentWeek += sms.getSMSAmount(); // Total for current week
+                        }
+
+                        if (smsCal.get(Calendar.DAY_OF_YEAR) == now.get(Calendar.DAY_OF_YEAR)) {
+                            spentToday += sms.getSMSAmount(); // Total for today
+                        }
+                    }
+                }
+            }
         }
+
+        tvToday.setText("₹" + String.format("%.2f", spentToday));
+        tvWeek.setText("₹" + String.format("%.2f", spentWeek));
+        tvMonth.setText("₹" + String.format("%.2f", spentMonth));
+        tvYear.setText("₹" + String.format("%.2f", spentYear));
     }
 
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == READ_SMS_PERMISSION_CODE && grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            readSms();
+        }
+    }
 }
