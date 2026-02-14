@@ -1,12 +1,9 @@
 package com.example.smsexpensetracker;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.text.TextUtils;
-import android.util.SparseBooleanArray;
-import android.view.View;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.SearchView;
@@ -24,38 +21,62 @@ public class SenderSelectionActivity extends AppCompatActivity {
     public static final String PREFS_NAME = "SmsTrackerPrefs";
     public static final String KEY_SELECTED_SENDERS = "SelectedSenders";
 
-    private SmsReader smsReader;
-    private ListView senderListView;
-    private ArrayAdapter<String> adapter;
-    private List<String> allSenders;
+    private SenderAdapter adapter;
+    // The single source of truth for ALL senders selected across the entire app
+    private Set<String> masterSelections;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_sender_selection);
 
-        smsReader = new SmsReader(getContentResolver());
-        senderListView = findViewById(R.id.senderListView);
+        SmsReader smsReader = new SmsReader(getContentResolver());
+        ListView senderListView = findViewById(R.id.senderListView);
         Button saveButton = findViewById(R.id.saveButton);
         SearchView searchView = findViewById(R.id.searchView);
 
-        // Get the full list of potential senders
-        allSenders = smsReader.getAllUniqueSenders();
+        // 1. Get the list of new banks the user wants to configure.
+        ArrayList<String> banksToConfigure = getIntent().getStringArrayListExtra("SELECTED_BANKS");
 
-        // Set up the adapter for the ListView
-        adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_multiple_choice, allSenders);
+        // 2. Load the master list of all currently saved senders.
+        loadMasterSelections();
+
+        // 3. Get all potential senders from the user's phone.
+        List<SenderInfo> allSendersOnPhone = smsReader.getAllUniqueSendersWithLatestMessage();
+
+        // 4. Filter the list to show only senders for the new banks.
+        List<SenderInfo> displayedSenders = new ArrayList<>();
+        if (banksToConfigure != null) {
+            for (SenderInfo sender : allSendersOnPhone) {
+                for (String bank : banksToConfigure) {
+                    if (sender.getAddress().toUpperCase().contains(bank.toUpperCase())) {
+                        displayedSenders.add(sender);
+                        break;
+                    }
+                }
+            }
+        }
+
+        // 5. Give the adapter the list to display and the master selection set.
+        adapter = new SenderAdapter(this, displayedSenders, masterSelections);
         senderListView.setAdapter(adapter);
 
-        // Load previously saved selections
-        loadAndCheckSavedSenders();
+        // 6. When an item is clicked, update the master set directly.
+        senderListView.setOnItemClickListener((parent, view, position, id) -> {
+            SenderInfo info = adapter.getItem(position);
+            if (info != null) {
+                if (masterSelections.contains(info.getAddress())) {
+                    masterSelections.remove(info.getAddress());
+                } else {
+                    masterSelections.add(info.getAddress());
+                }
+                adapter.notifyDataSetChanged();
+            }
+        });
 
-        // Set up the search functionality
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
-            public boolean onQueryTextSubmit(String query) {
-                return false;
-            }
-
+            public boolean onQueryTextSubmit(String query) { return false; }
             @Override
             public boolean onQueryTextChange(String newText) {
                 adapter.getFilter().filter(newText);
@@ -63,43 +84,23 @@ public class SenderSelectionActivity extends AppCompatActivity {
             }
         });
 
-        // Set up the save button
-        saveButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                saveSelectedSenders();
-            }
-        });
+        saveButton.setOnClickListener(v -> saveAndFinish());
     }
 
-    private void loadAndCheckSavedSenders() {
+    private void loadMasterSelections() {
         SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        Set<String> savedSenders = prefs.getStringSet(KEY_SELECTED_SENDERS, new HashSet<String>());
-
-        for (int i = 0; i < allSenders.size(); i++) {
-            if (savedSenders.contains(allSenders.get(i))) {
-                senderListView.setItemChecked(i, true);
-            }
-        }
+        masterSelections = new HashSet<>(prefs.getStringSet(KEY_SELECTED_SENDERS, new HashSet<>()));
     }
 
-    private void saveSelectedSenders() {
+    private void saveAndFinish() {
         SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        SharedPreferences.Editor editor = prefs.edit();
+        prefs.edit().putStringSet(KEY_SELECTED_SENDERS, masterSelections).apply();
 
-        Set<String> selectedSenders = new HashSet<>();
-        SparseBooleanArray checkedItems = senderListView.getCheckedItemPositions();
+        Toast.makeText(this, "Settings Saved!", Toast.LENGTH_SHORT).show();
 
-        for (int i = 0; i < adapter.getCount(); i++) {
-            if (checkedItems.get(i)) {
-                selectedSenders.add(adapter.getItem(i));
-            }
-        }
-
-        editor.putStringSet(KEY_SELECTED_SENDERS, selectedSenders);
-        editor.apply();
-
-        Toast.makeText(this, "Senders saved!", Toast.LENGTH_SHORT).show();
-        finish(); // Close the activity and return to MainActivity
+        Intent intent = new Intent(this, MainActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+        finish();
     }
 }

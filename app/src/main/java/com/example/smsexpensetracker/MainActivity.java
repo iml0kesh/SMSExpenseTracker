@@ -39,6 +39,17 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        // **THE WELCOME GATE**
+        // Check if the user has completed the setup. If not, redirect them.
+        SharedPreferences prefs = getSharedPreferences(SenderSelectionActivity.PREFS_NAME, Context.MODE_PRIVATE);
+        if (prefs.getStringSet(SenderSelectionActivity.KEY_SELECTED_SENDERS, new HashSet<>()).isEmpty()) {
+            Intent intent = new Intent(this, BankSelectionActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(intent);
+            finish();
+            return; // Stop the rest of the onCreate method from executing
+        }
+
         tvToday = findViewById(R.id.tvToday);
         tvWeek = findViewById(R.id.tvWeek);
         tvMonth = findViewById(R.id.tvMonth);
@@ -49,24 +60,18 @@ public class MainActivity extends AppCompatActivity {
         listViewOfSMS.setAdapter(adapter);
         smsReader = new SmsReader(getContentResolver());
 
-        // Check for SMS permission
         if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.READ_SMS)
                 != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this,
                     new String[]{android.Manifest.permission.READ_SMS}, READ_SMS_PERMISSION_CODE);
         } else {
-            // Permission is granted, load the SMS data
             loadAndProcessSms();
         }
     }
 
-    /**
-     * This method is called when the user returns to this activity.
-     */
     @Override
     protected void onResume() {
         super.onResume();
-        // Reload SMS data to reflect any changes made in the SenderSelectionActivity
         if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.READ_SMS)
                 == PackageManager.PERMISSION_GRANTED) {
             loadAndProcessSms();
@@ -82,7 +87,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         if (item.getItemId() == R.id.action_select_senders) {
-            startActivity(new Intent(this, SenderSelectionActivity.class));
+            startActivity(new Intent(this, BankSelectionActivity.class));
             return true;
         }
         return super.onOptionsItemSelected(item);
@@ -92,9 +97,8 @@ public class MainActivity extends AppCompatActivity {
         smsComponents.clear();
         processor.resetTotals();
 
-        // Load the senders that the user selected
         SharedPreferences prefs = getSharedPreferences(SenderSelectionActivity.PREFS_NAME, Context.MODE_PRIVATE);
-        Set<String> selectedSendersSet = prefs.getStringSet(SenderSelectionActivity.KEY_SELECTED_SENDERS, new HashSet<String>());
+        Set<String> selectedSendersSet = prefs.getStringSet(SenderSelectionActivity.KEY_SELECTED_SENDERS, new HashSet<>());
         String[] selectedSenders = selectedSendersSet.toArray(new String[0]);
 
 
