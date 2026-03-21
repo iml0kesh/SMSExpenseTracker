@@ -2,92 +2,165 @@ package com.example.smsexpensetracker.activities;
 
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.os.Bundle;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.ProgressBar;
-import android.widget.TextView;
-import android.widget.Toast;
+import android.view.animation.AnimationUtils;
+import android.view.animation.LayoutAnimationController;
 
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.smsexpensetracker.R;
 import com.example.smsexpensetracker.adapters.TransactionAdapter;
+import com.example.smsexpensetracker.databinding.ActivityMainBinding;
+import com.example.smsexpensetracker.databinding.ItemCategoryInsightBinding;
 import com.example.smsexpensetracker.models.Transaction;
 import com.example.smsexpensetracker.utils.ExportHelper;
 import com.example.smsexpensetracker.utils.Prefs;
 import com.example.smsexpensetracker.viewmodel.MainViewModel;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.snackbar.Snackbar;
 
-import java.util.ArrayList;
+import java.util.Map;
 import java.util.Set;
 
 public class MainActivity extends AppCompatActivity {
 
     private MainViewModel vm;
     private TransactionAdapter adapter;
-    private TextView tvToday, tvWeek, tvMonth, tvYear;
-    private ProgressBar progressBar;
+    private ActivityMainBinding binding;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Redirect to setup if no senders configured
+        // ── First-launch guard ─────────────────────────────────────────────
         if (Prefs.isFirstLaunch(this)) {
-            startActivity(new Intent(this, SetupActivity.class));
+            Intent i = new Intent(this, SetupActivity.class);
+            i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(i);
+            overridePendingTransition(R.anim.fade_in, R.anim.fade_out);
             finish();
             return;
         }
 
-        setContentView(R.layout.activity_main);
+        // ── Normal launch ──────────────────────────────────────────────────
+        binding = ActivityMainBinding.inflate(getLayoutInflater());
+        setContentView(binding.getRoot());
 
-        // Bind views
-        tvToday   = findViewById(R.id.tvToday);
-        tvWeek    = findViewById(R.id.tvWeek);
-        tvMonth   = findViewById(R.id.tvMonth);
-        tvYear    = findViewById(R.id.tvYear);
-        progressBar = findViewById(R.id.mainProgress);
+        setSupportActionBar(binding.toolbar);
+        if (getSupportActionBar() != null) getSupportActionBar().setDisplayShowTitleEnabled(false);
 
         // RecyclerView
-        RecyclerView rv = findViewById(R.id.rvTransactions);
-        rv.setLayoutManager(new LinearLayoutManager(this));
-        adapter = new TransactionAdapter(new ArrayList<>(), this::onLongPressTransaction);
-        rv.setAdapter(adapter);
+        binding.rvTransactions.setLayoutManager(new LinearLayoutManager(this));
+        adapter = new TransactionAdapter(this::onLongPressTransaction);
+        binding.rvTransactions.setAdapter(adapter);
+
+        // FAB
+        binding.fabExport.setOnClickListener(v -> exportCsv());
 
         // ViewModel
         vm = new ViewModelProvider(this).get(MainViewModel.class);
 
         vm.transactions.observe(this, list -> {
-            adapter.setData(list);
+            boolean wasEmpty = adapter.getCurrentList().isEmpty();
+            adapter.submitList(list);
+            if (wasEmpty && list != null && !list.isEmpty()) {
+                LayoutAnimationController anim = AnimationUtils.loadLayoutAnimation(
+                        this, R.anim.layout_animation_fall_down);
+                binding.rvTransactions.setLayoutAnimation(anim);
+                binding.rvTransactions.scheduleLayoutAnimation();
+            }
+            binding.emptyState.setVisibility(
+                    (list == null || list.isEmpty()) ? View.VISIBLE : View.GONE);
+            
+            // Update the "Recent Transactions" label based on filter
+            String currentFilter = vm.getFilterCategory();
+            if (currentFilter != null) {
+                binding.tvLabelTransactions.setText(currentFilter + " Transactions");
+            } else {
+                binding.tvLabelTransactions.setText("Recent Transactions");
+            }
         });
 
         vm.summary.observe(this, s -> {
-            tvToday.setText(fmt(s.today));
-            tvWeek.setText(fmt(s.week));
-            tvMonth.setText(fmt(s.month));
-            tvYear.setText(fmt(s.year));
+            binding.tvToday.setText(fmt(s.today));
+            binding.tvWeek.setText(fmt(s.week));
+            binding.tvMonth.setText(fmt(s.month));
+            binding.tvYear.setText(fmt(s.year));
         });
 
-        vm.syncing.observe(this, loading -> {
-            progressBar.setVisibility(loading ? View.VISIBLE : View.GONE);
+        // Observe Category Breakdown for Insights Dashboard
+        vm.breakdown.observe(this, cb -> {
+            renderInsights(cb);
         });
 
-        // Initial sync
+        vm.syncing.observe(this, loading ->
+            binding.mainProgress.setVisibility(loading ? View.VISIBLE : View.GONE)
+        );
+
+        vm.syncResult.observe(this, count -> {
+            if (count != null && count > 0) {
+                Snackbar.make(binding.getRoot(),
+                        count + " new transaction" + (count == 1 ? "" : "s") + " found",
+                        Snackbar.LENGTH_SHORT).show();
+                vm.syncResult.setValue(null);
+            }
+        });
+
         syncIfPermitted();
+    }
+
+    private void renderInsights(MainViewModel.CategoryBreakdown cb) {
+        binding.insightsContainer.removeAllViews();
+        if (cb == null || cb.totals.isEmpty()) {
+            binding.insightsContainer.addView(binding.tvNoInsights);
+            binding.tvNoInsights.setVisibility(View.VISIBLE);
+        } else {
+            binding.tvNoInsights.setVisibility(View.GONE);
+            LayoutInflater inflater = getLayoutInflater();
+            String activeFilter = vm.getFilterCategory();
+
+            for (Map.Entry<String, Double> entry : cb.totals.entrySet()) {
+                String cat = entry.getKey();
+                ItemCategoryInsightBinding b = ItemCategoryInsightBinding.inflate(inflater, binding.insightsContainer, false);
+                b.tvCategoryName.setText(cat);
+                b.tvCategoryAmount.setText(fmt(entry.getValue()));
+
+                // Highlight if active
+                if (cat.equals(activeFilter)) {
+                    b.getRoot().setStrokeColor(Color.parseColor("#9D5CFF")); // Electric Violet
+                    b.getRoot().setStrokeWidth(4);
+                } else {
+                    b.getRoot().setStrokeColor(Color.parseColor("#3F3F4D")); // Default outline
+                    b.getRoot().setStrokeWidth(2);
+                }
+
+                b.getRoot().setOnClickListener(v -> {
+                    if (cat.equals(vm.getFilterCategory())) {
+                        vm.setFilterCategory(null); // Clear filter
+                    } else {
+                        vm.setFilterCategory(cat); // Set filter
+                    }
+                    renderInsights(cb); // Re-render to update highlights
+                });
+
+                binding.insightsContainer.addView(b.getRoot());
+            }
+        }
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        // Refresh summary every time we come back (e.g. after budget screen)
-        vm.refreshSummary();
+        if (vm != null) vm.refreshSummary();
     }
 
     private void syncIfPermitted() {
@@ -97,16 +170,21 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    // Long press a transaction → re-categorise dialog
     private void onLongPressTransaction(Transaction t) {
         String[] cats = {"Food","Transport","Shopping","Entertainment",
                          "Health","Utilities","Fuel","ATM","Transfer","EMI","Investment","Other"};
-        new AlertDialog.Builder(this)
-            .setTitle("Set Category for this transaction")
-            .setItems(cats, (d, i) -> {
+        int current = -1;
+        for (int i = 0; i < cats.length; i++) {
+            if (cats[i].equals(t.category)) { current = i; break; }
+        }
+        new MaterialAlertDialogBuilder(this)
+            .setTitle("Re-categorise")
+            .setSingleChoiceItems(cats, current, (d, i) -> {
                 vm.updateCategory(t, cats[i]);
-                Toast.makeText(this, "Category updated to " + cats[i], Toast.LENGTH_SHORT).show();
+                d.dismiss();
+                Snackbar.make(binding.getRoot(), "Category → " + cats[i], Snackbar.LENGTH_SHORT).show();
             })
+            .setNegativeButton("Cancel", null)
             .show();
     }
 
@@ -122,8 +200,15 @@ public class MainActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         int id = item.getItemId();
 
+        if (id == R.id.menu_refresh) {
+            syncIfPermitted();
+            return true;
+        }
         if (id == R.id.menu_add_senders) {
-            startActivity(new Intent(this, SetupActivity.class));
+            Intent i = new Intent(this, SetupActivity.class);
+            i.putExtra("manage_mode", true);
+            startActivity(i);
+            overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);
             return true;
         }
         if (id == R.id.menu_remove_sender) {
@@ -132,14 +217,11 @@ public class MainActivity extends AppCompatActivity {
         }
         if (id == R.id.menu_budgets) {
             startActivity(new Intent(this, BudgetActivity.class));
+            overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);
             return true;
         }
         if (id == R.id.menu_export) {
             exportCsv();
-            return true;
-        }
-        if (id == R.id.menu_refresh) {
-            syncIfPermitted();
             return true;
         }
         return super.onOptionsItemSelected(item);
@@ -148,24 +230,32 @@ public class MainActivity extends AppCompatActivity {
     private void showRemoveSenderDialog() {
         Set<String> senders = Prefs.getSenders(this);
         if (senders.isEmpty()) {
-            Toast.makeText(this, "No senders configured.", Toast.LENGTH_SHORT).show();
+            Snackbar.make(binding.getRoot(), "No senders configured.", Snackbar.LENGTH_SHORT).show();
             return;
         }
-        String[] arr = senders.toArray(new String[0]);
+        String[] arr      = senders.toArray(new String[0]);
         boolean[] checked = new boolean[arr.length];
 
-        new AlertDialog.Builder(this)
+        new MaterialAlertDialogBuilder(this)
             .setTitle("Remove Senders")
             .setMultiChoiceItems(arr, checked, (d, i, isChecked) -> checked[i] = isChecked)
             .setPositiveButton("Remove", (d, w) -> {
                 Set<String> current = Prefs.getSenders(this);
+                int removed = 0;
                 for (int i = 0; i < arr.length; i++) {
-                    if (checked[i]) current.remove(arr[i]);
+                    if (checked[i]) { current.remove(arr[i]); removed++; }
                 }
-                Prefs.saveSenders(this, current);
-                Toast.makeText(this, "Senders removed.", Toast.LENGTH_SHORT).show();
+                if (removed > 0) {
+                    Prefs.saveSenders(this, current);
+                    Snackbar.make(binding.getRoot(),
+                            removed + " sender" + (removed == 1 ? "" : "s") + " removed.",
+                            Snackbar.LENGTH_SHORT).show();
+                }
                 if (Prefs.isFirstLaunch(this)) {
-                    startActivity(new Intent(this, SetupActivity.class));
+                    Intent i = new Intent(this, SetupActivity.class);
+                    i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                    startActivity(i);
+                    overridePendingTransition(R.anim.fade_in, R.anim.fade_out);
                     finish();
                 }
             })
@@ -176,7 +266,10 @@ public class MainActivity extends AppCompatActivity {
     private void exportCsv() {
         vm.getAllForExport(list -> {
             if (list == null || list.isEmpty()) {
-                runOnUiThread(() -> Toast.makeText(this, "No transactions to export.", Toast.LENGTH_SHORT).show());
+                runOnUiThread(() ->
+                    Snackbar.make(binding.getRoot(),
+                            "No transactions to export.", Snackbar.LENGTH_SHORT).show()
+                );
                 return;
             }
             ExportHelper.export(this, list);
@@ -187,5 +280,16 @@ public class MainActivity extends AppCompatActivity {
         if (amount >= 100000) return String.format("₹%.1fL", amount / 100000);
         if (amount >= 1000)   return String.format("₹%.1fK", amount / 1000);
         return String.format("₹%.0f", amount);
+    }
+
+    @Override
+    public void onBackPressed() {
+        moveTaskToBack(true);
+    }
+
+    @Override
+    public void finish() {
+        super.finish();
+        overridePendingTransition(R.anim.slide_in_left, R.anim.slide_out_right);
     }
 }

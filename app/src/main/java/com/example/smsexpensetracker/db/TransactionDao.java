@@ -23,8 +23,17 @@ public interface TransactionDao {
     @Update
     void update(Transaction t);
 
-    @Query("SELECT * FROM transactions ORDER BY date_millis DESC")
-    LiveData<List<Transaction>> getAllLive();
+    @Query("SELECT * FROM transactions ORDER BY date_millis DESC LIMIT :limit")
+    LiveData<List<Transaction>> getAllLive(int limit);
+
+    @Query("SELECT * FROM transactions WHERE category = :cat ORDER BY date_millis DESC LIMIT :limit")
+    LiveData<List<Transaction>> getByCategoryLive(String cat, int limit);
+
+    @Query("SELECT COUNT(*) FROM transactions")
+    int getCount();
+
+    @Query("SELECT COUNT(*) FROM transactions WHERE category = :cat")
+    int getCountByCategory(String cat);
 
     @Query("SELECT * FROM transactions ORDER BY date_millis DESC")
     List<Transaction> getAll();
