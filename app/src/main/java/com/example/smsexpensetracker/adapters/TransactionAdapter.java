@@ -4,65 +4,91 @@ import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.DiffUtil;
+import androidx.recyclerview.widget.ListAdapter;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.example.smsexpensetracker.R;
+import com.example.smsexpensetracker.databinding.ItemTransactionBinding;
 import com.example.smsexpensetracker.models.Transaction;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.List;
 import java.util.Locale;
 
-public class TransactionAdapter extends RecyclerView.Adapter<TransactionAdapter.VH> {
+public class TransactionAdapter extends ListAdapter<Transaction, TransactionAdapter.VH> {
 
-    public interface OnLongPress { void onLongPress(Transaction t); }
+    public interface InteractionListener {
+        void onLongPress(Transaction t);
+        default void onClick(Transaction t) {}
+    }
 
-    private List<Transaction> data;
-    private final OnLongPress listener;
-    private final SimpleDateFormat sdf = new SimpleDateFormat("dd MMM, hh:mm a", Locale.getDefault());
+    private final InteractionListener listener;
+    private static final SimpleDateFormat SDF =
+            new SimpleDateFormat("dd MMM, hh:mm a", Locale.getDefault());
 
-    public TransactionAdapter(List<Transaction> data, OnLongPress listener) {
-        this.data     = data;
+    private static final DiffUtil.ItemCallback<Transaction> DIFF =
+            new DiffUtil.ItemCallback<Transaction>() {
+                public boolean areItemsTheSame(@NonNull Transaction o, @NonNull Transaction n) {
+                    return o.id == n.id;
+                }
+                public boolean areContentsTheSame(@NonNull Transaction o, @NonNull Transaction n) {
+                    return o.amount == n.amount
+                        && o.type.equals(n.type)
+                        && o.category.equals(n.category)
+                        && o.dateMillis == n.dateMillis;
+                }
+            };
+
+    public TransactionAdapter(InteractionListener listener) {
+        super(DIFF);
         this.listener = listener;
     }
 
-    public void setData(List<Transaction> newData) {
-        this.data = newData;
-        notifyDataSetChanged();
-    }
-
     @NonNull @Override
-    public VH onCreateViewHolder(@NonNull ViewGroup p, int t) {
-        View v = LayoutInflater.from(p.getContext()).inflate(R.layout.item_transaction, p, false);
-        return new VH(v);
+    public VH onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        return new VH(ItemTransactionBinding.inflate(
+                LayoutInflater.from(parent.getContext()), parent, false));
     }
 
     @Override
     public void onBindViewHolder(@NonNull VH h, int pos) {
-        Transaction t = data.get(pos);
+        Transaction t = getItem(pos);
+        if (t == null) return;
 
-        // Icon letter
-        String senderDisplay = friendlyName(t.sender);
-        h.tvIcon.setText(senderDisplay.substring(0, 1).toUpperCase());
-        h.tvSender.setText(senderDisplay);
-        h.tvDate.setText(sdf.format(new Date(t.dateMillis)));
-        h.tvCategory.setText(t.category != null ? t.category : "Other");
+        String name = decodeSender(t.sender);
+        h.b.tvIcon.setText(name.substring(0, 1).toUpperCase(Locale.getDefault()));
+        h.b.tvSender.setText(name);
+        h.b.tvDate.setText(SDF.format(new Date(t.dateMillis)));
+        h.b.tvCategory.setText(t.category != null ? t.category : "Other");
 
-        // Amount with color
-        if ("DEBIT".equals(t.type)) {
-            h.tvAmount.setText(String.format(Locale.getDefault(), "-₹%.0f", t.amount));
-            h.tvAmount.setTextColor(Color.parseColor("#D32F2F"));
-        } else if ("CREDIT".equals(t.type)) {
-            h.tvAmount.setText(String.format(Locale.getDefault(), "+₹%.0f", t.amount));
-            h.tvAmount.setTextColor(Color.parseColor("#2E7D32"));
+        // Merchant line
+        if (t.merchant != null && !t.merchant.isEmpty()) {
+            h.b.tvMerchant.setText(t.merchant);
+            h.b.tvMerchant.setVisibility(View.VISIBLE);
         } else {
-            h.tvAmount.setText(String.format(Locale.getDefault(), "₹%.0f", t.amount));
-            h.tvAmount.setTextColor(Color.parseColor("#757575"));
+            h.b.tvMerchant.setVisibility(View.GONE);
         }
+
+        // Amount + colour
+        switch (t.type) {
+            case "DEBIT":
+                h.b.tvAmount.setText(String.format(Locale.getDefault(), "-₹%.0f", t.amount));
+                h.b.tvAmount.setTextColor(Color.parseColor("#F87171"));
+                break;
+            case "CREDIT":
+                h.b.tvAmount.setText(String.format(Locale.getDefault(), "+₹%.0f", t.amount));
+                h.b.tvAmount.setTextColor(Color.parseColor("#34D399"));
+                break;
+            default:
+                h.b.tvAmount.setText(String.format(Locale.getDefault(), "₹%.0f", t.amount));
+                h.b.tvAmount.setTextColor(Color.parseColor("#9898B0"));
+        }
+
+        h.itemView.setOnClickListener(v -> {
+            if (listener != null) listener.onClick(t);
+        });
 
         h.itemView.setOnLongClickListener(v -> {
             if (listener != null) listener.onLongPress(t);
@@ -70,36 +96,50 @@ public class TransactionAdapter extends RecyclerView.Adapter<TransactionAdapter.
         });
     }
 
-    @Override public int getItemCount() { return data != null ? data.size() : 0; }
+    public static String decodeSender(String sender) {
+        if (sender == null || sender.isEmpty()) return "Unknown";
 
-    private String friendlyName(String s) {
-        if (s == null) return "?";
-        String u = s.toUpperCase();
-        if (u.contains("HDFC"))     return "HDFC Bank";
-        if (u.contains("ICICI"))    return "ICICI Bank";
-        if (u.contains("SBI"))      return "State Bank";
-        if (u.contains("AXIS"))     return "Axis Bank";
-        if (u.contains("KOTAK"))    return "Kotak Bank";
-        if (u.contains("PAYTM"))    return "Paytm";
-        if (u.contains("PHONEPE"))  return "PhonePe";
-        if (u.contains("PNB"))      return "PNB";
-        if (u.contains("BOB"))      return "Bank of Baroda";
-        if (u.contains("INDUSIND")) return "IndusInd";
-        if (u.contains("YESBANK"))  return "Yes Bank";
-        if (u.contains("AMEX"))     return "Amex";
-        if (u.contains("CITI"))     return "Citibank";
-        return s;
+        String entity = sender;
+        if (sender.length() >= 4 && sender.charAt(2) == '-') {
+            entity = sender.substring(3).toUpperCase();
+        } else {
+            entity = sender.toUpperCase();
+        }
+
+        if (entity.contains("HDFCBK") || entity.contains("HDFCBL") || entity.contains("HDFC"))   return "HDFC Bank";
+        if (entity.contains("ICICIB") || entity.contains("ICICI"))                                 return "ICICI Bank";
+        if (entity.contains("SBIINB") || entity.contains("SBIPSG") || entity.contains("SBI"))     return "State Bank";
+        if (entity.contains("AXISBK") || entity.contains("AXISBM") || entity.contains("AXIS"))    return "Axis Bank";
+        if (entity.contains("KOTAKB") || entity.contains("KOTAK"))                                 return "Kotak Bank";
+        if (entity.contains("PNBSMS") || entity.contains("PNJBNK") || entity.contains("PNB"))     return "PNB";
+        if (entity.contains("BOBTXN") || entity.contains("BARODB") || entity.contains("BOB"))     return "Bank of Baroda";
+        if (entity.contains("CANBNK") || entity.contains("CANARA"))                               return "Canara Bank";
+        if (entity.contains("UNIONB") || entity.contains("UCOBNK"))                               return "Union Bank";
+        if (entity.contains("INDBNK") || entity.contains("INDUS"))                                return "IndusInd Bank";
+        if (entity.contains("YESBNK") || entity.contains("YESBK"))                                return "Yes Bank";
+        if (entity.contains("IDBIBK") || entity.contains("IDBI"))                                 return "IDBI Bank";
+        if (entity.contains("FEDBK")  || entity.contains("FEDERAL"))                              return "Federal Bank";
+        if (entity.contains("RBLBNK") || entity.contains("RATBNK"))                               return "RBL Bank";
+        if (entity.contains("AMEXIN") || entity.contains("AMEX"))                                 return "Amex";
+        if (entity.contains("CITIBK") || entity.contains("CITI"))                                 return "Citibank";
+        if (entity.contains("SCBNKI") || entity.contains("SCBANK"))                               return "Standard Chartered";
+        if (entity.contains("HSBCIN") || entity.contains("HSBC"))                                 return "HSBC";
+        if (entity.contains("PAYTMB") || entity.contains("PAYTM"))                                return "Paytm";
+        if (entity.contains("PHPEBN") || entity.contains("PHONEPE") || entity.contains("PHPBNK")) return "PhonePe";
+        if (entity.contains("GPAYBN") || entity.contains("GOOGLEPAY") || entity.contains("GPAY")) return "Google Pay";
+        if (entity.contains("CREDBN") || entity.contains("CRED"))                                 return "CRED";
+        if (entity.contains("SBICARD") || entity.contains("SBICRD"))                              return "SBI Card";
+        if (entity.contains("HDFCCC") || entity.contains("HDFCCD"))                               return "HDFC Credit Card";
+        if (entity.contains("BAJAJF") || entity.contains("BAJFIN"))                               return "Bajaj Finserv";
+        if (entity.contains("AUBNKL") || entity.contains("AUSMFB"))                               return "AU Small Finance";
+        if (entity.contains("EQTSBN") || entity.contains("EQUITAS"))                              return "Equitas Bank";
+        if (entity.contains("UJJIVN") || entity.contains("UJJIVAN"))                              return "Ujjivan Bank";
+
+        return entity.isEmpty() ? sender : entity;
     }
 
     static class VH extends RecyclerView.ViewHolder {
-        TextView tvIcon, tvSender, tvDate, tvAmount, tvCategory;
-        VH(View v) {
-            super(v);
-            tvIcon     = v.findViewById(R.id.tvIcon);
-            tvSender   = v.findViewById(R.id.tvSender);
-            tvDate     = v.findViewById(R.id.tvDate);
-            tvAmount   = v.findViewById(R.id.tvAmount);
-            tvCategory = v.findViewById(R.id.tvCategory);
-        }
+        final ItemTransactionBinding b;
+        VH(ItemTransactionBinding b) { super(b.getRoot()); this.b = b; }
     }
 }

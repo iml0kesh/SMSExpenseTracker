@@ -1,8 +1,81 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <style name="Theme.SMSExpenseTracker" parent="Theme.AppCompat.Light.DarkActionBar">
-        <item name="colorPrimary">#1565C0</item>
-        <item name="colorPrimaryDark">#0D47A1</item>
-        <item name="colorAccent">#42A5F5</item>
+<resources xmlns:tools="http://schemas.android.com/tools">
+
+    <!--
+        SET — SMS Expense Tracker
+        Deep Space Dark palette
+        Primary  : Violet  #7C3AED
+        Credit   : Emerald #34D399
+        Debit    : Coral   #F87171
+        Surfaces : #0A0A12 / #0F0F17 / #13131F / #1C1C2E
+    -->
+    <style name="Theme.SMSExpenseTracker" parent="Theme.Material3.DayNight.NoActionBar">
+
+        <!-- Primary: rich violet -->
+        <item name="colorPrimary">#7C3AED</item>
+        <item name="colorOnPrimary">#FFFFFF</item>
+        <item name="colorPrimaryContainer">#2D1B69</item>
+        <item name="colorOnPrimaryContainer">#DDD6FE</item>
+
+        <!-- Secondary: emerald — credits, positive states -->
+        <item name="colorSecondary">#34D399</item>
+        <item name="colorOnSecondary">#022C22</item>
+        <item name="colorSecondaryContainer">#065F46</item>
+        <item name="colorOnSecondaryContainer">#A7F3D0</item>
+
+        <!-- Tertiary: soft indigo — chips, accents -->
+        <item name="colorTertiary">#818CF8</item>
+        <item name="colorOnTertiary">#1E1B4B</item>
+        <item name="colorTertiaryContainer">#312E81</item>
+        <item name="colorOnTertiaryContainer">#C7D2FE</item>
+
+        <!-- Error: coral — debits, over-budget warnings -->
+        <item name="colorError">#F87171</item>
+        <item name="colorOnError">#450A0A</item>
+        <item name="colorErrorContainer">#7F1D1D</item>
+        <item name="colorOnErrorContainer">#FECACA</item>
+
+        <!--
+            Surface stack — 4 visible depth levels
+            colorBackground      #0A0A12   page / window
+            colorSurface         #0F0F17   app bars, bottom sheets, Snackbar bg
+            colorSurfaceVariant  #13131F   cards, list rows
+            colorOutlineVariant  #1C1C2E   card strokes, dividers
+        -->
+        <item name="android:colorBackground">#25252F</item>
+        <item name="colorSurface">#23232E</item>
+        <item name="colorSurfaceVariant">#3F3F54</item>
+        <item name="colorOnSurface">#E8E8F0</item>
+        <item name="colorOnSurfaceVariant">#9898B0</item>
+        <item name="colorOutline">#808081</item>
+        <item name="colorOutlineVariant">#1C1C2E</item>
+
+        <!--
+            Snackbar uses colorSurface (#0F0F17) for background
+            and colorOnSurface (#E8E8F0) for text — both dark-safe now.
+        -->
+
+        <!-- Status bar matches surface, nav bar matches background — seamless -->
+        <item name="android:statusBarColor">#0F0F17</item>
+        <item name="android:navigationBarColor">#0A0A12</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="27">false</item>
+        <item name="android:windowLightStatusBar" tools:targetApi="23">false</item>
+
+        <!-- Let overridePendingTransition() own all transitions -->
+        <item name="android:windowAnimationStyle">@null</item>
+
+        <!-- Alert dialogs inherit dark surface -->
+        <item name="materialAlertDialogTheme">@style/ThemeOverlay.SET.Dialog</item>
+
     </style>
+
+    <!-- Dialog overlay — floats above the darkest surface level -->
+    <style name="ThemeOverlay.SET.Dialog"
+           parent="ThemeOverlay.Material3.MaterialAlertDialog">
+        <item name="colorSurface">#1C1C2E</item>
+        <item name="colorOnSurface">#E8E8F0</item>
+        <item name="colorPrimary">#7C3AED</item>
+        <item name="colorOnSurfaceVariant">#9898B0</item>
+    </style>
+
 </resources>
