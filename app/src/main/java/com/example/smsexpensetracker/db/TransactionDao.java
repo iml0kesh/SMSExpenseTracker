@@ -23,29 +23,20 @@ public interface TransactionDao {
     @Update
     void update(Transaction t);
 
-    @Query("SELECT * FROM transactions ORDER BY date_millis DESC LIMIT :limit")
-    LiveData<List<Transaction>> getAllLive(int limit);
+    @Query("SELECT * FROM transactions WHERE sender IN (:senders) AND (:cat IS NULL OR category = :cat) ORDER BY date_millis DESC LIMIT :limit")
+    LiveData<List<Transaction>> getFilteredLive(List<String> senders, String cat, int limit);
 
-    @Query("SELECT * FROM transactions WHERE category = :cat ORDER BY date_millis DESC LIMIT :limit")
-    LiveData<List<Transaction>> getByCategoryLive(String cat, int limit);
-
-    @Query("SELECT COUNT(*) FROM transactions")
-    int getCount();
-
-    @Query("SELECT COUNT(*) FROM transactions WHERE category = :cat")
-    int getCountByCategory(String cat);
+    @Query("SELECT COUNT(*) FROM transactions WHERE sender IN (:senders) AND (:cat IS NULL OR category = :cat)")
+    int getFilteredCount(List<String> senders, String cat);
 
     @Query("SELECT * FROM transactions ORDER BY date_millis DESC")
     List<Transaction> getAll();
 
-    @Query("SELECT * FROM transactions WHERE date_millis >= :from AND date_millis <= :to ORDER BY date_millis DESC")
-    List<Transaction> getBetween(long from, long to);
+    @Query("SELECT COALESCE(SUM(amount),0) FROM transactions WHERE type='DEBIT' AND sender IN (:senders) AND date_millis >= :from AND date_millis <= :to")
+    double sumDebitFilteredBetween(List<String> senders, long from, long to);
 
-    @Query("SELECT COALESCE(SUM(amount),0) FROM transactions WHERE type='DEBIT' AND date_millis >= :from AND date_millis <= :to")
-    double sumDebitBetween(long from, long to);
-
-    @Query("SELECT COALESCE(SUM(amount),0) FROM transactions WHERE type='DEBIT' AND category=:cat AND date_millis >= :from AND date_millis <= :to")
-    double sumDebitByCategoryBetween(String cat, long from, long to);
+    @Query("SELECT COALESCE(SUM(amount),0) FROM transactions WHERE type='DEBIT' AND category=:cat AND sender IN (:senders) AND date_millis >= :from AND date_millis <= :to")
+    double sumDebitByCategoryFilteredBetween(String cat, List<String> senders, long from, long to);
 
     @Query("SELECT COUNT(*) FROM transactions WHERE sms_id = :smsId")
     int existsBySmsId(String smsId);

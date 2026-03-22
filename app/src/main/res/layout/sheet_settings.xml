@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/bottom_sheet_bg"
+    android:paddingTop="8dp"
+    android:paddingBottom="24dp">
+
+    <!-- Drag handle -->
+    <View
+        android:layout_width="36dp"
+        android:layout_height="4dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="16dp"
+        android:background="?attr/colorOutline"
+        android:alpha="0.6"/>
+
+    <!-- Title -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp"
+        android:paddingBottom="8dp"
+        android:text="Settings"
+        android:textColor="?attr/colorOnSurface"
+        android:textSize="18sp"
+        android:fontFamily="@font/nunito_bold"/>
+
+    <!-- Refresh -->
+    <LinearLayout
+        android:id="@+id/sheetRefresh"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp"
+        android:background="?attr/selectableItemBackground">
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:text="Refresh transactions"
+            android:textColor="?attr/colorOnSurface" android:textSize="15sp"
+            android:fontFamily="@font/nunito"/>
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="↻" android:textColor="?attr/colorPrimary" android:textSize="20sp"/>
+    </LinearLayout>
+
+    <!-- Add Senders -->
+    <LinearLayout
+        android:id="@+id/sheetAddSenders"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp"
+        android:background="?attr/selectableItemBackground">
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:text="Add senders"
+            android:textColor="?attr/colorOnSurface" android:textSize="15sp"
+            android:fontFamily="@font/nunito"/>
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="+" android:textColor="?attr/colorPrimary" android:textSize="22sp"/>
+    </LinearLayout>
+
+    <!-- Remove Senders -->
+    <LinearLayout
+        android:id="@+id/sheetRemoveSenders"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp"
+        android:background="?attr/selectableItemBackground">
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:text="Remove senders"
+            android:textColor="?attr/colorOnSurface" android:textSize="15sp"
+            android:fontFamily="@font/nunito"/>
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="−" android:textColor="?attr/colorError" android:textSize="24sp"/>
+    </LinearLayout>
+
+    <!-- Budgets -->
+    <LinearLayout
+        android:id="@+id/sheetBudgets"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp"
+        android:background="?attr/selectableItemBackground">
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:text="Set budgets"
+            android:textColor="?attr/colorOnSurface" android:textSize="15sp"
+            android:fontFamily="@font/nunito"/>
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="₹" android:textColor="?attr/colorSecondary" android:textSize="18sp"/>
+    </LinearLayout>
+
+    <!-- Divider -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginStart="24dp"
+        android:layout_marginEnd="24dp"
+        android:layout_marginTop="4dp"
+        android:layout_marginBottom="4dp"
+        android:background="?attr/colorOutline"
+        android:alpha="0.4"/>
+
+    <!-- Import CSV -->
+    <LinearLayout
+        android:id="@+id/sheetImport"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp"
+        android:background="?attr/selectableItemBackground">
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:text="Import from CSV"
+            android:textColor="?attr/colorOnSurface" android:textSize="15sp"
+            android:fontFamily="@font/nunito"/>
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="↑" android:textColor="?attr/colorOnSurfaceVariant" android:textSize="18sp"/>
+    </LinearLayout>
+
+    <!-- Export CSV -->
+    <LinearLayout
+        android:id="@+id/sheetExport"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp"
+        android:background="?attr/selectableItemBackground">
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:text="Export to CSV"
+            android:textColor="?attr/colorOnSurface" android:textSize="15sp"
+            android:fontFamily="@font/nunito"/>
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="↓" android:textColor="?attr/colorOnSurfaceVariant" android:textSize="18sp"/>
+    </LinearLayout>
+
+</LinearLayout>

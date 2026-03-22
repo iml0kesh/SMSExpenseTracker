@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:background="@drawable/bottom_sheet_bg">
+
+    <!-- Drag handle -->
+    <View
+        android:layout_width="36dp"
+        android:layout_height="4dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="20dp"
+        android:background="#FFFFFF"
+        android:alpha="0.5"/>
+
+    <!-- Amount -->
+    <TextView
+        android:id="@+id/detailAmount"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:fontFamily="@font/nunito_bold"
+        android:textSize="40sp"
+        android:textColor="?attr/colorOnSurface"
+        tools:text="₹1,250"/>
+
+    <TextView
+        android:id="@+id/detailType"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="4dp"
+        android:fontFamily="@font/nunito_bold"
+        android:textSize="12sp"
+        android:letterSpacing="0.12"
+        tools:text="DEBITED"
+        tools:textColor="?attr/colorError"/>
+
+    <!-- Info card -->
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="0dp"
+        app:cardBackgroundColor="?attr/colorSurfaceVariant"
+        app:strokeWidth="1dp"
+        app:strokeColor="?attr/colorOutline">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="FROM" android:textColor="?attr/colorOnSurfaceVariant"
+                android:textSize="10sp" android:letterSpacing="0.1"
+                android:fontFamily="@font/nunito_bold"/>
+            <TextView android:id="@+id/detailSender" android:layout_width="wrap_content"
+                android:layout_height="wrap_content" android:textSize="16sp"
+                android:textColor="?attr/colorOnSurface"
+                android:fontFamily="@font/nunito_bold" android:layout_marginBottom="14dp"
+                android:layout_marginTop="2dp" tools:text="HDFC Bank"/>
+
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="TO / MERCHANT" android:textColor="?attr/colorOnSurfaceVariant"
+                android:textSize="10sp" android:letterSpacing="0.1"
+                android:fontFamily="@font/nunito_bold"/>
+            <TextView android:id="@+id/detailMerchant" android:layout_width="wrap_content"
+                android:layout_height="wrap_content" android:textSize="16sp"
+                android:textColor="?attr/colorOnSurface"
+                android:fontFamily="@font/nunito_bold" android:layout_marginBottom="14dp"
+                android:layout_marginTop="2dp" tools:text="Swiggy"/>
+
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="DATE &amp; TIME" android:textColor="?attr/colorOnSurfaceVariant"
+                android:textSize="10sp" android:letterSpacing="0.1"
+                android:fontFamily="@font/nunito_bold"/>
+            <TextView android:id="@+id/detailDate" android:layout_width="wrap_content"
+                android:layout_height="wrap_content" android:textSize="14sp"
+                android:textColor="?attr/colorOnSurface"
+                android:layout_marginTop="2dp"
+                tools:text="21 Mar 2026, 06:33 PM"/>
+
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Original SMS -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:text="ORIGINAL SMS"
+        android:textColor="#E0E3E7"
+        android:textSize="10sp"
+        android:letterSpacing="0.1"
+        android:fontFamily="@font/nunito_bold"/>
+
+    <TextView
+        android:id="@+id/detailSmsBody"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:background="?attr/colorSurfaceVariant"
+        android:padding="12dp"
+        android:textSize="12sp"
+        android:textColor="#D5DAE0"
+        android:fontFamily="@font/nunito"
+        android:lineSpacingExtra="3dp"
+        tools:text="Your A/c XX1234 is debited for Rs. 1250.00 on 21-03-26..."/>
+
+    <!-- Category picker -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:text="Category"
+        android:textColor="?attr/colorOnSurface"
+        android:textSize="15sp"
+        android:fontFamily="@font/nunito_bold"/>
+
+    <com.google.android.material.chip.ChipGroup
+        android:id="@+id/categoryChipGroup"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        app:singleSelection="true"/>
+
+</LinearLayout>

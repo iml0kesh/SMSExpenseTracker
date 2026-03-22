@@ -5,6 +5,7 @@ import android.app.Application;
 import androidx.annotation.NonNull;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
+import androidx.lifecycle.MediatorLiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.Transformations;
 
@@ -14,8 +15,12 @@ import com.example.smsexpensetracker.models.Transaction;
 import com.example.smsexpensetracker.utils.DateUtils;
 import com.example.smsexpensetracker.utils.Prefs;
 import com.example.smsexpensetracker.utils.SmsIngestor;
+import com.example.smsexpensetracker.utils.SmsParser;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -43,6 +48,7 @@ public class MainViewModel extends AndroidViewModel {
 
     private final MutableLiveData<String> filterCategory = new MutableLiveData<>(null);
     private final MutableLiveData<Integer> limit = new MutableLiveData<>(10);
+    private final MutableLiveData<Set<String>> selectedBankNames = new MutableLiveData<>(new HashSet<>());
     
     public final LiveData<List<Transaction>> transactions;
     public final MutableLiveData<Boolean> hasMore = new MutableLiveData<>(true);
@@ -56,23 +62,53 @@ public class MainViewModel extends AndroidViewModel {
         super(app);
         dao = AppDatabase.get(app).dao();
         
-        // Combined LiveData for filtering and pagination
-        LiveData<CombinedParams> params = Transformations.switchMap(filterCategory, cat -> 
-            Transformations.map(limit, l -> new CombinedParams(cat, l))
-        );
+        // Mediator to combine all filter triggers
+        MediatorLiveData<FilterParams> filterTrigger = new MediatorLiveData<>();
+        filterTrigger.addSource(filterCategory, v -> notifyFilterChange(filterTrigger));
+        filterTrigger.addSource(limit, v -> notifyFilterChange(filterTrigger));
+        filterTrigger.addSource(selectedBankNames, v -> notifyFilterChange(filterTrigger));
 
-        transactions = Transformations.switchMap(params, p -> {
-            checkHasMore(p.category, p.limit);
-            if (p.category == null) return dao.getAllLive(p.limit);
-            return dao.getByCategoryLive(p.category, p.limit);
+        transactions = Transformations.switchMap(filterTrigger, p -> {
+            List<String> allowedSenders = getAllowedSenders(p.selectedBanks);
+            checkHasMore(allowedSenders, p.category, p.limit);
+            return dao.getFilteredLive(allowedSenders, p.category, p.limit);
         });
     }
 
-    private void checkHasMore(String cat, int currentLimit) {
+    private void notifyFilterChange(MediatorLiveData<FilterParams> mediator) {
+        mediator.setValue(new FilterParams(filterCategory.getValue(), limit.getValue(), selectedBankNames.getValue()));
+        refreshSummary();
+    }
+
+    private List<String> getAllowedSenders(Set<String> selectedBanks) {
+        Set<String> allSenders = Prefs.getSenders(getApplication());
+        if (selectedBanks == null || selectedBanks.isEmpty()) {
+            return new ArrayList<>(allSenders);
+        }
+        
+        List<String> filtered = new ArrayList<>();
+        for (String s : allSenders) {
+            if (selectedBanks.contains(SmsParser.getBankName(s))) {
+                filtered.add(s);
+            }
+        }
+        // If bank filter returns nothing (unlikely), return empty list to show nothing
+        return filtered;
+    }
+
+    private void checkHasMore(List<String> senders, String cat, int currentLimit) {
         exec.execute(() -> {
-            int total = (cat == null) ? dao.getCount() : dao.getCountByCategory(cat);
+            int total = dao.getFilteredCount(senders, cat);
             hasMore.postValue(total > currentLimit);
         });
+    }
+
+    public void toggleBankFilter(String bankName) {
+        Set<String> current = selectedBankNames.getValue();
+        if (current == null) current = new HashSet<>();
+        if (current.contains(bankName)) current.remove(bankName);
+        else current.add(bankName);
+        selectedBankNames.setValue(current);
     }
 
     public void loadMore() {
@@ -81,7 +117,7 @@ public class MainViewModel extends AndroidViewModel {
     }
 
     public void setFilterCategory(String cat) {
-        limit.setValue(10); // Reset limit on filter change
+        limit.setValue(10); 
         filterCategory.setValue(cat);
     }
 
@@ -106,21 +142,28 @@ public class MainViewModel extends AndroidViewModel {
     }
 
     private void refreshSummaryInternal() {
+        List<String> senders = getAllowedSenders(selectedBankNames.getValue());
+        if (senders.isEmpty()) {
+            summary.postValue(new Summary());
+            breakdown.postValue(new CategoryBreakdown());
+            return;
+        }
+
         long[] td = DateUtils.today();
         long[] wk = DateUtils.thisWeek();
         long[] mn = DateUtils.thisMonth();
         long[] yr = DateUtils.thisYear();
 
         Summary s = new Summary();
-        s.today = dao.sumDebitBetween(td[0], td[1]);
-        s.week  = dao.sumDebitBetween(wk[0], wk[1]);
-        s.month = dao.sumDebitBetween(mn[0], mn[1]);
-        s.year  = dao.sumDebitBetween(yr[0], yr[1]);
+        s.today = dao.sumDebitFilteredBetween(senders, td[0], td[1]);
+        s.week  = dao.sumDebitFilteredBetween(senders, wk[0], wk[1]);
+        s.month = dao.sumDebitFilteredBetween(senders, mn[0], mn[1]);
+        s.year  = dao.sumDebitFilteredBetween(senders, yr[0], yr[1]);
         summary.postValue(s);
 
         CategoryBreakdown cb = new CategoryBreakdown();
         for (String cat : ALL_CATS) {
-            double amt = dao.sumDebitByCategoryBetween(cat, mn[0], mn[1]);
+            double amt = dao.sumDebitByCategoryFilteredBetween(cat, senders, mn[0], mn[1]);
             if (amt > 0) cb.totals.put(cat, amt);
         }
         breakdown.postValue(cb);
@@ -138,9 +181,12 @@ public class MainViewModel extends AndroidViewModel {
         exec.execute(() -> callback.accept(dao.getAll()));
     }
 
-    private static class CombinedParams {
+    private static class FilterParams {
         final String category;
         final int limit;
-        CombinedParams(String c, int l) { category = c; limit = l; }
+        final Set<String> selectedBanks;
+        FilterParams(String c, int l, Set<String> b) { 
+            category = c; limit = l; selectedBanks = b; 
+        }
     }
 }

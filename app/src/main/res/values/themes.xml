@@ -2,80 +2,76 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
 
     <!--
-        SET — SMS Expense Tracker
-        Deep Space Dark palette
-        Primary  : Violet  #7C3AED
-        Credit   : Emerald #34D399
-        Debit    : Coral   #F87171
-        Surfaces : #0A0A12 / #0F0F17 / #13131F / #1C1C2E
+        SET — Midnight Blue  |  Nunito font
+        Background   #0D1117
+        Surface      #111827
+        SurfaceVar   #1C2333
+        Elevated     #243044
+        Primary      #0EA5E9
+        Credit       #10B981
+        Debit        #F87171
     -->
     <style name="Theme.SMSExpenseTracker" parent="Theme.Material3.DayNight.NoActionBar">
 
-        <!-- Primary: rich violet -->
-        <item name="colorPrimary">#7C3AED</item>
+        <item name="colorPrimary">#0A1218</item>
         <item name="colorOnPrimary">#FFFFFF</item>
-        <item name="colorPrimaryContainer">#2D1B69</item>
-        <item name="colorOnPrimaryContainer">#DDD6FE</item>
+        <item name="colorPrimaryContainer">#0C2461</item>
+        <item name="colorOnPrimaryContainer">#BAE6FD</item>
 
-        <!-- Secondary: emerald — credits, positive states -->
-        <item name="colorSecondary">#34D399</item>
+        <item name="colorSecondary">#10B981</item>
         <item name="colorOnSecondary">#022C22</item>
-        <item name="colorSecondaryContainer">#065F46</item>
+        <item name="colorSecondaryContainer">#064E3B</item>
         <item name="colorOnSecondaryContainer">#A7F3D0</item>
 
-        <!-- Tertiary: soft indigo — chips, accents -->
-        <item name="colorTertiary">#818CF8</item>
-        <item name="colorOnTertiary">#1E1B4B</item>
-        <item name="colorTertiaryContainer">#312E81</item>
-        <item name="colorOnTertiaryContainer">#C7D2FE</item>
+        <item name="colorTertiary">#38BDF8</item>
+        <item name="colorOnTertiary">#082F49</item>
+        <item name="colorTertiaryContainer">#0C4A6E</item>
+        <item name="colorOnTertiaryContainer">#BAE6FD</item>
 
-        <!-- Error: coral — debits, over-budget warnings -->
         <item name="colorError">#F87171</item>
-        <item name="colorOnError">#450A0A</item>
-        <item name="colorErrorContainer">#7F1D1D</item>
-        <item name="colorOnErrorContainer">#FECACA</item>
+        <item name="colorOnError">#3D0000</item>
+        <item name="colorErrorContainer">#5C1A1A</item>
+        <item name="colorOnErrorContainer">#FFCDD2</item>
 
-        <!--
-            Surface stack — 4 visible depth levels
-            colorBackground      #0A0A12   page / window
-            colorSurface         #0F0F17   app bars, bottom sheets, Snackbar bg
-            colorSurfaceVariant  #13131F   cards, list rows
-            colorOutlineVariant  #1C1C2E   card strokes, dividers
-        -->
-        <item name="android:colorBackground">#25252F</item>
-        <item name="colorSurface">#23232E</item>
-        <item name="colorSurfaceVariant">#3F3F54</item>
-        <item name="colorOnSurface">#E8E8F0</item>
-        <item name="colorOnSurfaceVariant">#9898B0</item>
-        <item name="colorOutline">#808081</item>
-        <item name="colorOutlineVariant">#1C1C2E</item>
+        <item name="android:colorBackground">#0D1117</item>
+        <item name="colorSurface">#111827</item>
+        <item name="colorSurfaceVariant">#1C2333</item>
+        <item name="colorOnSurface">#F0F6FF</item>
+        <item name="colorOnSurfaceVariant">#8B9CB6</item>
+        <item name="colorOutline">#2A3A52</item>
+        <item name="colorOutlineVariant">#1A2538</item>
 
-        <!--
-            Snackbar uses colorSurface (#0F0F17) for background
-            and colorOnSurface (#E8E8F0) for text — both dark-safe now.
-        -->
-
-        <!-- Status bar matches surface, nav bar matches background — seamless -->
-        <item name="android:statusBarColor">#0F0F17</item>
-        <item name="android:navigationBarColor">#0A0A12</item>
+        <item name="android:statusBarColor">#0D1117</item>
+        <item name="android:navigationBarColor">#0D1117</item>
         <item name="android:windowLightNavigationBar" tools:targetApi="27">false</item>
         <item name="android:windowLightStatusBar" tools:targetApi="23">false</item>
-
-        <!-- Let overridePendingTransition() own all transitions -->
         <item name="android:windowAnimationStyle">@null</item>
 
-        <!-- Alert dialogs inherit dark surface -->
+        <!-- Nunito as app-wide font -->
+        <item name="android:fontFamily">@font/nunito</item>
+
         <item name="materialAlertDialogTheme">@style/ThemeOverlay.SET.Dialog</item>
+        <item name="bottomSheetDialogTheme">@style/BottomSheetDialogTheme</item>
 
     </style>
 
-    <!-- Dialog overlay — floats above the darkest surface level -->
     <style name="ThemeOverlay.SET.Dialog"
            parent="ThemeOverlay.Material3.MaterialAlertDialog">
-        <item name="colorSurface">#1C1C2E</item>
-        <item name="colorOnSurface">#E8E8F0</item>
-        <item name="colorPrimary">#7C3AED</item>
-        <item name="colorOnSurfaceVariant">#9898B0</item>
+        <item name="colorSurface">#243044</item>
+        <item name="colorOnSurface">#F0F6FF</item>
+        <item name="colorPrimary">#0EA5E9</item>
+        <item name="colorOnSurfaceVariant">#8B9CB6</item>
+        <item name="android:fontFamily">@font/nunito</item>
+    </style>
+
+    <style name="BottomSheetDialogTheme"
+           parent="Theme.Material3.DayNight.BottomSheetDialog">
+        <item name="colorSurface">#243044</item>
+        <item name="colorOnSurface">#F0F6FF</item>
+        <item name="colorPrimary">#0EA5E9</item>
+        <item name="android:windowIsFloating">false</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:fontFamily">@font/nunito</item>
     </style>
 
 </resources>

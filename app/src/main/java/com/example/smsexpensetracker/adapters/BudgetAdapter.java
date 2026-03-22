@@ -1,5 +1,6 @@
 package com.example.smsexpensetracker.adapters;
 
+import android.content.Context;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
@@ -10,6 +11,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.smsexpensetracker.databinding.ItemBudgetBinding;
+import com.google.android.material.color.MaterialColors;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -26,7 +28,6 @@ public class BudgetAdapter extends RecyclerView.Adapter<BudgetAdapter.VH> {
         editedBudgets.putAll(budgets);
     }
 
-    /** Update spent amounts without rebuilding the adapter — preserves user edits */
     public void updateSpent(Map<String,Double> newSpent) {
         this.spent = new HashMap<>(newSpent);
         notifyItemRangeChanged(0, categories.length);
@@ -43,10 +44,10 @@ public class BudgetAdapter extends RecyclerView.Adapter<BudgetAdapter.VH> {
         String cat      = categories[pos];
         double budget   = editedBudgets.getOrDefault(cat, 0.0);
         double spentAmt = spent.getOrDefault(cat, 0.0);
+        Context ctx     = h.itemView.getContext();
 
         h.binding.budgetCategory.setText(cat);
 
-        // Spent label
         if (spentAmt > 0) {
             h.binding.budgetSpent.setText(String.format("₹%.0f spent", spentAmt));
             h.binding.budgetSpent.setVisibility(View.VISIBLE);
@@ -54,14 +55,28 @@ public class BudgetAdapter extends RecyclerView.Adapter<BudgetAdapter.VH> {
             h.binding.budgetSpent.setVisibility(View.GONE);
         }
 
-        // Progress bar
         if (budget > 0) {
             int pct = (int) Math.min(100, (spentAmt / budget) * 100);
             h.binding.budgetProgress.setProgress(pct, true);
+
+            // ── Progress color via MaterialColors — theme-aware ───────────
             int color;
-            if      (pct >= 100) color = 0xFFF87171;
-            else if (pct >= 75)  color = 0xFFFBBF24;
-            else                  color = 0xFF34D399;
+            if (pct >= 100) {
+                // colorError = over budget
+                color = MaterialColors.getColor(ctx,
+                        com.google.android.material.R.attr.colorError,
+                        0xFFF87171);
+            } else if (pct >= 75) {
+                // colorTertiary = warning (amber in Midnight Blue theme)
+                color = MaterialColors.getColor(ctx,
+                        com.google.android.material.R.attr.colorTertiary,
+                        0xFFF59E0B);
+            } else {
+                // colorSecondary = on track (emerald)
+                color = MaterialColors.getColor(ctx,
+                        com.google.android.material.R.attr.colorSecondary,
+                        0xFF10B981);
+            }
             h.binding.budgetProgress.setIndicatorColor(color);
             h.binding.budgetProgress.setVisibility(View.VISIBLE);
             h.binding.budgetPct.setText(pct + "%");
@@ -71,40 +86,29 @@ public class BudgetAdapter extends RecyclerView.Adapter<BudgetAdapter.VH> {
             h.binding.budgetPct.setVisibility(View.GONE);
         }
 
-        // Detach old TextWatcher before changing text, then attach new one
+        // Input — detach old watcher before setText to prevent feedback loop
         if (h.watcher != null) {
             h.binding.budgetInput.removeTextChangedListener(h.watcher);
         }
-
         h.binding.budgetInput.setText(budget > 0 ? String.valueOf((int) budget) : "");
-
         h.watcher = new TextWatcher() {
-            @Override public void beforeTextChanged(CharSequence s, int a, int b, int c) {}
-            @Override public void onTextChanged(CharSequence s, int a, int b, int c) {}
-            @Override
+            public void beforeTextChanged(CharSequence s, int a, int b, int c) {}
+            public void onTextChanged(CharSequence s, int a, int b, int c) {}
             public void afterTextChanged(Editable s) {
-                try {
-                    editedBudgets.put(cat, Double.parseDouble(s.toString()));
-                } catch (NumberFormatException e) {
-                    editedBudgets.put(cat, 0.0);
-                }
+                try   { editedBudgets.put(cat, Double.parseDouble(s.toString())); }
+                catch (NumberFormatException e) { editedBudgets.put(cat, 0.0); }
             }
         };
         h.binding.budgetInput.addTextChangedListener(h.watcher);
     }
 
-    @Override
-    public int getItemCount() { return categories.length; }
+    @Override public int getItemCount() { return categories.length; }
 
     public Map<String,Double> getBudgets() { return editedBudgets; }
 
     static class VH extends RecyclerView.ViewHolder {
         final ItemBudgetBinding binding;
-        TextWatcher watcher; // typed as TextWatcher so removeTextChangedListener works
-
-        VH(ItemBudgetBinding b) {
-            super(b.getRoot());
-            this.binding = b;
-        }
+        TextWatcher watcher;
+        VH(ItemBudgetBinding b) { super(b.getRoot()); binding = b; }
     }
 }

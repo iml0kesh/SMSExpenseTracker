@@ -6,6 +6,7 @@
     <item android:id="@+id/menu_add_senders"   android:title="Add Senders"     app:showAsAction="never"/>
     <item android:id="@+id/menu_remove_sender" android:title="Remove Senders"  app:showAsAction="never"/>
     <item android:id="@+id/menu_budgets"       android:title="Set Budgets"     app:showAsAction="never"/>
+    <item android:id="@+id/menu_import"        android:title="Import from CSV"  app:showAsAction="never"/>
     <item android:id="@+id/menu_export"        android:title="Export to CSV"   app:showAsAction="never"/>
 
 </menu>
