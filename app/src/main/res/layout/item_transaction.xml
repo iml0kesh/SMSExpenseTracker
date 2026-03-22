@@ -2,14 +2,15 @@
 <com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="8dp"
-    app:cardCornerRadius="14dp"
+    android:layout_marginBottom="6dp"
+    app:cardCornerRadius="16dp"
     app:cardElevation="0dp"
     app:strokeWidth="1dp"
     app:strokeColor="?attr/colorOutline"
-    app:cardBackgroundColor="?attr/colorSurface">
+    app:cardBackgroundColor="?attr/colorSurfaceVariant">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -18,18 +19,19 @@
         android:padding="14dp"
         android:gravity="center_vertical">
 
-        <!-- Icon circle -->
+        <!-- Icon circle — letter initial of bank name -->
         <TextView
             android:id="@+id/tvIcon"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
+            android:layout_width="42dp"
+            android:layout_height="42dp"
             android:background="@drawable/circle_bg"
             android:gravity="center"
-            android:textSize="17sp"
-            android:fontFamily="sans-serif-black"
-            android:textColor="?attr/colorOnPrimaryContainer"/>
+            android:textSize="16sp"
+            android:fontFamily="@font/nunito_bold"
+            android:textColor="?attr/colorOnPrimaryContainer"
+            tools:text="H"/>
 
-        <!-- Middle -->
+        <!-- Middle: name, merchant, date, category chip -->
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -43,52 +45,65 @@
                 android:layout_height="wrap_content"
                 android:textColor="?attr/colorOnSurface"
                 android:textSize="14sp"
-                android:fontFamily="sans-serif-medium"/>
+                android:fontFamily="@font/nunito_bold"
+                tools:text="HDFC Bank"/>
 
-            <!-- Merchant — shown only when available -->
+            <!-- Hidden when no merchant extracted -->
             <TextView
                 android:id="@+id/tvMerchant"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="1dp"
-                android:textColor="?attr/colorOnSurface"
-                android:textSize="13sp"
-                android:fontFamily="sans-serif-regular"
-                android:visibility="gone"/>
+                android:textColor="?attr/colorOnSurfaceVariant"
+                android:textSize="12sp"
+                android:visibility="gone"
+                tools:visibility="visible"
+                tools:text="Swiggy"/>
 
             <TextView
                 android:id="@+id/tvDate"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
-                android:textColor="?attr/colorOutline"
-                android:textSize="11sp"/>
+                android:textColor="?attr/colorOnSurfaceVariant"
+                android:textSize="11sp"
+                android:alpha="0.7"
+                tools:text="21 Mar, 09:01 PM"/>
 
             <!-- Category chip -->
             <TextView
                 android:id="@+id/tvCategory"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="5dp"
+                android:layout_marginTop="6dp"
                 android:background="@drawable/chip_bg"
                 android:paddingStart="8dp"
                 android:paddingEnd="8dp"
-                android:paddingTop="2dp"
-                android:paddingBottom="2dp"
+                android:paddingTop="3dp"
+                android:paddingBottom="3dp"
                 android:textSize="10sp"
-                android:fontFamily="sans-serif-medium"
-                android:textColor="?attr/colorOnSecondaryContainer"/>
+                android:fontFamily="@font/nunito_bold"
+                android:textColor="?attr/colorOnSecondaryContainer"
+                tools:text="Food"/>
 
         </LinearLayout>
 
-        <!-- Amount -->
+        <!--
+            Amount — textColor is set in code via MaterialColors.getColor()
+            so it reads colorError (debit) / colorSecondary (credit) from theme.
+            android:textColor here is the fallback shown in layout editor only.
+            tools:textColor shows a debit-style red in Android Studio preview.
+        -->
         <TextView
             android:id="@+id/tvAmount"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textSize="16sp"
-            android:fontFamily="sans-serif-black"
-            android:layout_marginStart="8dp"/>
+            android:textSize="15sp"
+            android:fontFamily="@font/nunito_bold"
+            android:layout_marginStart="10dp"
+            android:textColor="?attr/colorOnSurface"
+            tools:text="-₹450"
+            tools:textColor="?attr/colorError"/>
 
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

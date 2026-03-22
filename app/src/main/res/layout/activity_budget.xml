@@ -75,7 +75,7 @@
             android:layout_height="52dp"
             android:text="Save Budgets"
             android:textSize="15sp"
-            android:fontFamily="sans-serif-medium"
+            android:fontFamily="@font/nunito_bold"
             app:backgroundTint="?attr/colorPrimary"
             app:cornerRadius="10dp"
             android:textColor="?attr/colorOnPrimary"/>

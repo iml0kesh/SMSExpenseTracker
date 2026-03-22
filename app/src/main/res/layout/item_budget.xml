@@ -2,6 +2,7 @@
 <com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginTop="4dp"
@@ -37,7 +38,8 @@
                     android:layout_height="wrap_content"
                     android:textColor="?attr/colorOnSurface"
                     android:textSize="15sp"
-                    android:fontFamily="sans-serif-medium"/>
+                    android:fontFamily="@font/nunito_bold"
+                    tools:text="Food"/>
 
                 <TextView
                     android:id="@+id/budgetSpent"
@@ -46,7 +48,9 @@
                     android:layout_marginTop="2dp"
                     android:textColor="?attr/colorOutline"
                     android:textSize="12sp"
-                    android:visibility="gone"/>
+                    android:visibility="gone"
+                    tools:visibility="visible"
+                    tools:text="₹2,400 spent"/>
 
             </LinearLayout>
 
@@ -58,8 +62,10 @@
                 android:layout_marginEnd="12dp"
                 android:textColor="?attr/colorOutline"
                 android:textSize="12sp"
-                android:fontFamily="sans-serif-medium"
-                android:visibility="gone"/>
+                android:fontFamily="@font/nunito_bold"
+                android:visibility="gone"
+                tools:visibility="visible"
+                tools:text="80%"/>
 
             <!-- Budget input -->
             <com.google.android.material.textfield.TextInputLayout
@@ -95,7 +101,7 @@
             android:progress="0"
             android:visibility="gone"
             app:trackCornerRadius="3dp"
-            app:trackColor="#1A000000"/>
+            app:trackColor="?attr/colorOutline"/>
 
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

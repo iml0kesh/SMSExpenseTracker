@@ -1,0 +1,8 @@
+Food
+Transfer
+Other
+Health
+Transport
+Shopping
+Utilities
+Entertainment
